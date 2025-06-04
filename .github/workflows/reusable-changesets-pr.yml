@@ -1,0 +1,68 @@
+name: Reusable Changesets Release PR
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: 'Node.js version to use'
+        required: false
+        type: string
+        default: '20'
+      pnpm-version:
+        description: 'PNPM version to use'
+        required: false
+        type: string
+        default: '9'
+      pr-title:
+        description: 'Title for the Release PR'
+        required: false
+        type: string
+        default: 'chore: Version Packages for Release'
+      commit-message:
+        description: 'Commit message for version bumps'
+        required: false
+        type: string
+        default: 'chore: Update package versions and changelogs'
+    secrets:
+      GH_TOKEN: # Using a different name to avoid confusion with the default GITHUB_TOKEN if needed, though often not an issue.
+        description: 'GitHub Token with permissions to create PRs in the calling repository'
+        required: true
+
+jobs:
+  create_release_pr:
+    name: Create Release Pull Request
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+        with:
+          # Fetch all history for Changesets to correctly determine changed packages
+          fetch-depth: 0
+          # The token here is for checking out the code of the CALLING repository
+          # The default GITHUB_TOKEN of the reusable workflow's repo won't work for the calling repo.
+          # However, actions/checkout usually uses the token from the context of the calling workflow.
+          # If issues arise, you might need to pass the token explicitly here too.
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v3 # Or v4
+        with:
+          version: ${{ inputs.pnpm-version }}
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Create Release Pull Request
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          version: pnpm changeset version
+          title: ${{ inputs.pr-title }}
+          commit: ${{ inputs.commit-message }}
+        env:
+          # This GITHUB_TOKEN is used by changesets/action to create a PR in the CALLING repository
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
