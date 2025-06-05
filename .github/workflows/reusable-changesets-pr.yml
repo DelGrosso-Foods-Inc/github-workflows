@@ -23,10 +23,6 @@ on:
         required: false
         type: string
         default: 'chore: Update package versions and changelogs'
-    secrets:
-      GH_TOKEN: # Using a different name to avoid confusion with the default GITHUB_TOKEN if needed, though often not an issue.
-        description: 'GitHub Token with permissions to create PRs in the calling repository'
-        required: true
 
 jobs:
   create_release_pr:
@@ -36,22 +32,18 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v4
         with:
-          # Fetch all history for Changesets to correctly determine changed packages
           fetch-depth: 0
-          # The token here is for checking out the code of the CALLING repository
-          # The default GITHUB_TOKEN of the reusable workflow's repo won't work for the calling repo.
-          # However, actions/checkout usually uses the token from the context of the calling workflow.
-          # If issues arise, you might need to pass the token explicitly here too.
+
+      - name: Setup PNPM
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ inputs.pnpm-version }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ inputs.node-version }}
-
-      - name: Setup PNPM
-        uses: pnpm/action-setup@v3 # Or v4
-        with:
-          version: ${{ inputs.pnpm-version }}
+          cache: pnpm
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
@@ -64,5 +56,4 @@ jobs:
           title: ${{ inputs.pr-title }}
           commit: ${{ inputs.commit-message }}
         env:
-          # This GITHUB_TOKEN is used by changesets/action to create a PR in the CALLING repository
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
