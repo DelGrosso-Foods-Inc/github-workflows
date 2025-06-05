@@ -8,21 +8,6 @@ on:
         required: false
         type: string
         default: '20'
-      pnpm-version:
-        description: 'PNPM version to use'
-        required: false
-        type: string
-        default: '9'
-      pr-title:
-        description: 'Title for the Release PR'
-        required: false
-        type: string
-        default: 'chore: Version Packages for Release'
-      commit-message:
-        description: 'Commit message for version bumps'
-        required: false
-        type: string
-        default: 'chore: Update package versions and changelogs'
 
 jobs:
   create_release_pr:
@@ -36,8 +21,6 @@ jobs:
 
       - name: Setup PNPM
         uses: pnpm/action-setup@v4
-        with:
-          version: ${{ inputs.pnpm-version }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -49,11 +32,6 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Create Release Pull Request
-        id: changesets
         uses: changesets/action@v1
-        with:
-          version: pnpm changeset version
-          title: ${{ inputs.pr-title }}
-          commit: ${{ inputs.commit-message }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
